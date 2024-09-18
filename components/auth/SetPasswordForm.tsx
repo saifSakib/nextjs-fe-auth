@@ -1,6 +1,6 @@
 'use client';
 import CardWrapper from "@/components/auth/CardWrapper"
-import { LoginSchema } from "@/schema";
+import { SetPasswordSchema } from "@/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -9,24 +9,28 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import FormError from "@/components/form/FormError";
 import FormSuccess from "@/components/form/FormSuccess";
-import loginSubmit from "@/integration/frontend/login-submit";
+import {resetPassoword} from "@/integration/backend/reset-password";
 import Link from "next/link";
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 
-function LoginForm() {
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState(''); 
-  const form = useForm<z.infer<typeof LoginSchema>>({
-    resolver: zodResolver(LoginSchema),
+function SetPasswordForm() {
+  const form = useForm<z.infer<typeof SetPasswordSchema>>({
+    resolver: zodResolver(SetPasswordSchema),
     defaultValues:{
-      email: "",
-      password: ""
+      password: "",
+      confirm_password: ""
     }
   })
 
-  async function onSubmit(values:z.infer<typeof LoginSchema>){
-    const data = await loginSubmit(values)
-    
+  const searchParamas = useSearchParams()
+  const token = searchParamas.get('token') as string
+
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState('');
+  async function onSubmit(values:z.infer<typeof SetPasswordSchema>){
+    console.log("how============",values);
+    const data = await resetPassoword(token,values);
     if (data?.success) {
       setSuccess(data.success)
       setError("")
@@ -35,33 +39,18 @@ function LoginForm() {
       setSuccess("")
       setError(data.error)
     }
-
+    
   }
   return (
     <CardWrapper
       backButtonHref="/auth/register"
       backButtonLabel="Dont Have An Account?"
-      headerLabel="Login To Your Account"
+      headerLabel="Welcome Back! Set Your Password"
       showSocial
     >
         <Form {...form}>
           <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
             <div className="space-y-4">
-            <>
-                <FormField
-                control={form.control}
-                name="email"
-                render={({field})=>(
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input {...field} type="email" placeholder="john.doe@gmail.com"/>
-                    </FormControl>
-                    <FormMessage/>
-                  </FormItem>
-                )}
-              />
-
               <FormField
                 control={form.control}
                 name="password"
@@ -75,31 +64,28 @@ function LoginForm() {
                   </FormItem>
                 )}
               />
-              </>
-              {
-                ((success==="2FA Expired. Resent 2FA Email" || success==="2FA Email Sent") || (error=='2FA Code Not Found')) &&
-                  <FormField
-                  control={form.control}
-                  name="code"
-                  render={({field})=>(
-                    <FormItem>
-                      <FormLabel>2FA Code</FormLabel>
-                      <FormControl>
-                        <Input {...field} type="text" placeholder="123456"/>
-                      </FormControl>
-                      <FormMessage/>
-                    </FormItem>
-                  )}
-                />
-              }
+
+              <FormField
+                control={form.control}
+                name="confirm_password"
+                render={({field})=>(
+                  <FormItem>
+                    <FormLabel>Confirm Password</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="password" placeholder="******"/>
+                    </FormControl>
+                    <FormMessage/>
+                  </FormItem>
+                )}
+              />
             </div>
             <FormError message={error}/>
             <FormSuccess message={success}/>
             <Button className="w-full" type="submit">Submit</Button>
 
             <Button variant="link" className="p-0">
-              <Link href="/auth/forgot-password">
-                Forgot Password?
+              <Link href="/auth/login">
+                Back To Login?
               </Link>
             </Button>
           </form>
@@ -108,4 +94,4 @@ function LoginForm() {
   )
 }
 
-export default LoginForm
+export default SetPasswordForm

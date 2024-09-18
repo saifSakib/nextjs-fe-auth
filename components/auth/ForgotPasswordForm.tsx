@@ -1,6 +1,6 @@
 'use client';
 import CardWrapper from "@/components/auth/CardWrapper"
-import { LoginSchema } from "@/schema";
+import { ForgotPasswordSchema } from "@/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -9,23 +9,24 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import FormError from "@/components/form/FormError";
 import FormSuccess from "@/components/form/FormSuccess";
-import loginSubmit from "@/integration/frontend/login-submit";
+import {generateResetPassowordToken} from "@/integration/backend/generate-reset-password-token";
 import Link from "next/link";
+import { sendResetPasswordEmail } from "@/email/mail";
 import { useState } from "react";
 
-function LoginForm() {
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState(''); 
-  const form = useForm<z.infer<typeof LoginSchema>>({
-    resolver: zodResolver(LoginSchema),
+function ForgotPassword() {
+  const form = useForm<z.infer<typeof ForgotPasswordSchema>>({
+    resolver: zodResolver(ForgotPasswordSchema),
     defaultValues:{
       email: "",
-      password: ""
     }
   })
 
-  async function onSubmit(values:z.infer<typeof LoginSchema>){
-    const data = await loginSubmit(values)
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState('');
+
+  async function onSubmit(values:z.infer<typeof ForgotPasswordSchema>){
+    const data = await generateResetPassowordToken(values)
     
     if (data?.success) {
       setSuccess(data.success)
@@ -35,20 +36,19 @@ function LoginForm() {
       setSuccess("")
       setError(data.error)
     }
-
+    
   }
   return (
     <CardWrapper
       backButtonHref="/auth/register"
       backButtonLabel="Dont Have An Account?"
-      headerLabel="Login To Your Account"
-      showSocial
+      headerLabel="Forgot Your Password?"
+      showSocial={false}
     >
         <Form {...form}>
           <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
             <div className="space-y-4">
-            <>
-                <FormField
+              <FormField
                 control={form.control}
                 name="email"
                 render={({field})=>(
@@ -61,45 +61,14 @@ function LoginForm() {
                   </FormItem>
                 )}
               />
-
-              <FormField
-                control={form.control}
-                name="password"
-                render={({field})=>(
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input {...field} type="password" placeholder="******"/>
-                    </FormControl>
-                    <FormMessage/>
-                  </FormItem>
-                )}
-              />
-              </>
-              {
-                ((success==="2FA Expired. Resent 2FA Email" || success==="2FA Email Sent") || (error=='2FA Code Not Found')) &&
-                  <FormField
-                  control={form.control}
-                  name="code"
-                  render={({field})=>(
-                    <FormItem>
-                      <FormLabel>2FA Code</FormLabel>
-                      <FormControl>
-                        <Input {...field} type="text" placeholder="123456"/>
-                      </FormControl>
-                      <FormMessage/>
-                    </FormItem>
-                  )}
-                />
-              }
             </div>
             <FormError message={error}/>
             <FormSuccess message={success}/>
             <Button className="w-full" type="submit">Submit</Button>
 
             <Button variant="link" className="p-0">
-              <Link href="/auth/forgot-password">
-                Forgot Password?
+              <Link href="/auth/login">
+                Back To Login
               </Link>
             </Button>
           </form>
@@ -108,4 +77,4 @@ function LoginForm() {
   )
 }
 
-export default LoginForm
+export default ForgotPassword
